@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% from "macros.html" import spark, conf, src, day %}
+{% block title %}Signal Radar · Today{% endblock %}
+{% block main %}
+<section aria-labelledby="themes-h">
+  <div class="section-head">
+    <h2 id="themes-h">Themes</h2>
+    <span class="note">{{ meta.theme_window }} days to {{ day(meta.as_of) }}. Themes are found from the data; a model only names and summarises them.</span>
+  </div>
+  <div class="themes">
+    {% for t in themes %}
+    <article class="theme {{ t.kind }}">
+      <div class="top">
+        <span class="kind">{{ 'FOR YOUR LENS' if t.kind == 'lens' else 'MOMENTUM' }}</span>
+        <span class="facts">{{ conf(t.confidence) }} {{ t.item_count }} items · {{ t.families }} source{{ '' if t.families == 1 else 's' }}</span>
+      </div>
+      <h3>{{ t.title }}</h3>
+      {% if t.narrative %}<p>{{ t.narrative }}</p>{% endif %}
+      {% if t.so_what %}<p class="sowhat"><span class="label">Why it matters</span>{{ t.so_what }}</p>{% endif %}
+      <div class="chips">{% for e in t.entities %}<a class="chip" href="{{ href('explore', e.slug) }}">{{ e.name }}</a>{% endfor %}</div>
+      <details>
+        <summary>Evidence ({{ t['items'] | length }} of {{ t.item_count }})</summary>
+        <ol>{% for i in t['items'] %}<li><a href="{{ i.url }}" target="_blank" rel="noopener">{{ i.title }}</a> <span>{{ day(i.date) }} · {{ src(i.source) }}</span></li>{% endfor %}</ol>
+      </details>
+      {% if t.model %}<div class="byline">written by {{ t.model.split('/')[-1] }}{% if t.model.startswith('ollama') %} · local model{% endif %}</div>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="cols">
+  <section class="panel" aria-labelledby="read-h">
+    <div class="section-head">
+      <h2 id="read-h">Read first</h2>
+      <span class="note">last {{ meta.reading_days }} days, ranked by relevance to your lens, cross-source coverage and momentum</span>
+    </div>
+    <ol class="reading">
+      {% for r in reading %}
+      <li class="read" data-id="{{ r.id }}">
+        <div>
+          <a class="title" href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+          <div class="meta">
+            <span>{{ day(r.date) }}</span><span>{{ src(r.source) }}</span>
+            {% if r.category %}<span>{{ r.category | replace('_', ' ') }}</span>{% endif %}
+            <span class="rel">relevance {{ r.relevance }}/3</span>
+            {% if r.covered_by | length > 1 %}<span>covered by {{ r.covered_by | map('upper') | join(' + ') }}</span>{% endif %}
+          </div>
+          {% if r.why %}<p class="why">{{ r.why }}</p>{% endif %}
+          {% if r.because %}<p class="why because">Ranked {{ 'up' if r.personal > 0 else 'down' }}: {{ r.because }}.</p>{% endif %}
+          {% if r.entities %}<div class="chips">{% for e in r.entities %}<a class="chip" href="{{ href('explore', e.slug) }}">{{ e.name }}</a>{% endfor %}</div>{% endif %}
+        </div>
+        {% if edition == 'console' %}
+        <div class="vote" role="group" aria-label="Was this useful?">
+          <button type="button" data-vote="1" aria-pressed="{{ 'true' if r.vote == 1 else 'false' }}" title="Useful">+</button>
+          <button type="button" data-vote="-1" aria-pressed="false" title="Not useful, hide">−</button>
+        </div>
+        {% else %}<div></div>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <div class="stack">
+    <section class="panel" aria-labelledby="up-h">
+      <h3 id="up-h">Rising · {{ meta.theme_window }} days</h3>
+      <table class="movers">
+        {% for m in movers.up %}
+        <tr>
+          <td class="name"><a href="{{ href('explore', m.slug) }}">{{ m.name }}</a>{% if m.new %}<span class="new">NEW</span>{% endif %}<span class="type">{{ m.type }}</span></td>
+          <td>{{ spark(m.series) }}</td>
+          <td class="num"><b>{{ m.current }}</b> vs {{ '%g' % m.baseline }}</td>
+          <td class="num">{{ conf(m.confidence) }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <p class="hint">Mentions in the last {{ meta.theme_window }} days vs the average of the four windows before. Sparkline: 12 weeks.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="down-h">
+      <h3 id="down-h">Fading</h3>
+      <table class="movers">
+        {% for m in movers.down %}
+        <tr>
+          <td class="name"><a href="{{ href('explore', m.slug) }}">{{ m.name }}</a><span class="type">{{ m.type }}</span></td>
+          <td>{{ spark(m.series, down=True) }}</td>
+          <td class="num"><b>{{ m.current }}</b> vs {{ '%g' % m.baseline }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </section>
+
+    <section class="panel" aria-labelledby="blind-h">
+      <h3 id="blind-h">Blind spots</h3>
+      {% set mx = (blind_spots.categories | map(attribute='share') | max) or 0.01 %}
+      <div class="bars">
+        {% for c in blind_spots.categories %}
+        <div class="barrow"><span>{{ c.label }}</span><span class="track"><span class="fill" style="display:block;width:{{ (100 * c.share / mx) | round(1) }}%"></span></span><span class="n">{{ c['items'] }}</span></div>
+        {% endfor %}
+      </div>
+      <p class="hint">Items per lens category, last 28 days, out of {{ "{:,}".format(blind_spots.total_28d) }}.</p>
+      <div class="watch">
+        {% for w in blind_spots.watchlist %}<div class="{{ 'zero' if w.mentions_90d == 0 else '' }}"><span>{{ w.term }}</span><b>{{ w.mentions_90d }}</b></div>{% endfor %}
+      </div>
+      <p class="hint">Watchlist mentions in 90 days. A zero means the sources don't cover it, not that nothing happened.</p>
+    </section>
+  </div>
+</div>
+
+<section class="panel" aria-labelledby="market-h">
+  <h3 id="market-h">Market map · 28 days</h3>
+  {% set mx = (market | map(attribute='items') | max) or 1 %}
+  <div class="bars">
+    {% for c in market %}
+    <div class="barrow"><span>{{ c.label }}</span><span class="track"><span class="fill" style="display:block;width:{{ (100 * c['items'] / mx) | round(1) }}%"></span></span><span class="n">{{ c['items'] }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

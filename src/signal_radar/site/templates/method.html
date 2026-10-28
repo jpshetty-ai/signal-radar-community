@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import src, day, conf %}
+{% block title %}Signal Radar · Method{% endblock %}
+{% block main %}
+<article class="prose">
+  <span class="eyebrow">Method</span>
+  <p>Signal Radar reads newsletters, stores one record per news item, classifies each item with a language model and counts how often companies, products and topics are mentioned over time. Everything on these pages is computed from that record; nothing is typed in by hand.</p>
+
+  <h2>Sources</h2>
+  <table>
+    <tr><th>Source</th><th>Items</th></tr>
+    {% for s in meta.sources %}<tr><td>{{ src(s.source) }}</td><td class="mono">{{ "{:,}".format(s['items']) }}</td></tr>{% endfor %}
+  </table>
+  <p>Coverage runs from {{ day(meta.first_date) }} to {{ day(meta.as_of) }}. The newsletters are written for AI builders, so regulation and financial services are thinly covered; the blind-spots panel on the Today page shows how thinly.{% if edition == 'public' %} Newsletters whose terms allow personal use only, or that publish no terms, are left out of this edition entirely: their items, and their mentions in every count.{% endif %}</p>
+
+  <h2>Themes</h2>
+  <p>Themes are found by counting, not by a model. A momentum theme starts from an entity whose mentions rose most against its own baseline and adds the entities most often mentioned with it. The lens theme is built only from items rated relevant to the reader. A model then writes the title and two sentences from the theme's items, and the card names that model.</p>
+
+  <h2>Rising and fading</h2>
+  <p>Mentions in the last {{ meta.theme_window }} days are compared with the average of the four {{ meta.theme_window }}-day windows before. Score = (current − baseline) / √(baseline + 1), so going from 10 to 30 mentions outranks going from 0 to 3.</p>
+  <p>Confidence: {{ conf('high') }} high means at least 8 items from both source families; {{ conf('medium') }} medium means at least 4; {{ conf('low') }} low is a hint, not a finding.</p>
+
+  <h2>Relevance and reading list</h2>
+  <p>Each item gets a relevance score from 0 to 3 for this reader: {{ meta.lens }}</p>
+  <p>The reading list ranks the last {{ meta.reading_days }} days by relevance, then by whether more than one independent source covered the story, the momentum of its entities{% if edition == 'console' %} and, for AlphaSignal, reader engagement{% endif %}. The same story from two editions is shown once.</p>
+  <p>Your + and − votes in the console teach the ranking once there are at least three: items about entities and categories you liked move up, those like items you dismissed move down, by at most 0.8 points, so relevance still decides. Each moved item says why. A − also hides that item.</p>
+
+  <h2>Models</h2>
+  <p>Classification and entity extraction run on a local model on this computer. Theme summaries and answers use the configured writing and reasoning models{% if meta.writer_models %}; this build used {{ meta.writer_models | join(', ') }}{% endif %}. The local model is cheap and private but makes mistakes: categories and entity types are sometimes wrong, and summaries can overstate. Every claim links to its source items so it can be checked.</p>
+
+  <h2>What leaves this computer</h2>
+  <p>The pipeline reads Gmail (read-only), the public tldr.tech archive{% if edition == 'console' %} (AlphaSignal and Bay Area Letters from the email only: their sites and tracked links are never fetched){% endif %}, and public RSS feeds (EU AI Act Newsletter, Sifted, Tech.eu, European Commission digital strategy). Questions asked in the console are answered locally unless a cloud model is configured. Built {{ meta.built_at[:16] | replace('T', ' ') }} UTC.</p>
+{% if edition == 'public' and site %}
+  <h2 id="privacy">Privacy</h2>
+  <p>{{ site.publisher }} publishes this preview and is the controller of the personal data below under the GDPR. We collect as little as the preview needs.</p>
+  <ul>
+    <li><strong>Login.</strong> Your email address is on the invitation list, and you use it to receive a one-time PIN. Cloudflare Access, which runs the login for us as our processor, records each login (email, time, IP address) for security. The login sets one cookie that keeps you signed in for {% if site.session_hours and site.session_hours % 24 == 0 %}{{ site.session_hours // 24 }} day{{ 's' if site.session_hours > 24 }}{% else %}{{ site.session_hours }} hours{% endif %}; it is needed for the login and is the only cookie. Legal basis: our legitimate interest in showing the preview only to invited readers. Your address stays on the list until you ask to be removed or the preview ends.</li>
+    {% if site.analytics %}<li><strong>Visit statistics.</strong> Cloudflare Web Analytics counts page views without cookies, without fingerprinting and without following you across sites. We see totals only, such as views per page and country. Legal basis: our legitimate interest in knowing which pages are used.</li>{% endif %}
+    {% if site.feedback_url %}<li><strong>Feedback.</strong> {% if site.feedback_url.startswith('mailto:') %}Feedback is optional and goes by email to {{ site.publisher }}. We read it to improve the preview and delete it when it is no longer needed.{% else %}The feedback form is optional. What you enter is stored by the form provider for us and read only by {{ site.publisher }}.{% endif %}</li>{% endif %}
+    <li><strong>Where.</strong> Cloudflare may process data outside the EU, under the EU-US Data Privacy Framework and the EU standard contractual clauses. Nothing is sold, used for advertising or shared with anyone else.</li>
+  </ul>
+  <p>You can ask for a copy of your data, correct it, have it deleted or object to its use: {% if site.privacy_contact %}write to <a href="mailto:{{ site.privacy_contact }}">{{ site.privacy_contact }}</a>{% else %}reply to your invitation email{% endif %}. You can also complain to the data protection authority where you live or work.</p>
+{% endif %}
+</article>
+{% endblock %}

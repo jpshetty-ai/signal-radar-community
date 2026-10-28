@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "macros.html" import conf, src, day %}
+{% block title %}Signal Radar · Brief{% endblock %}
+{% block main %}
+{% if not brief %}
+<p class="empty">No weekly brief yet.{% if edition == 'console' %} Run <code>signal-radar brief</code>.{% endif %}</p>
+{% else %}
+{% set p = brief.prose or {} %}
+{% set so = p.so_what or {} %}
+<div class="section-head">
+  <h2>Weekly brief {{ brief.week }}</h2>
+  <span class="note">{{ day(brief.start) }} to {{ day(brief.end) }} · {{ brief.coverage['items'] }} items. Signals are computed; {% if p.model %}prose written by {{ p.model.split('/')[-1] }}{% if p.model.startswith('ollama') %} (local model){% endif %} from the listed evidence only{% else %}no prose this week{% endif %}.</span>
+</div>
+<div class="cols">
+  <div class="stack">
+    {% if p.headline %}<section class="panel"><h3>The week</h3><p class="lead">{{ p.headline }}</p></section>{% endif %}
+    {% for kind, title, note in [('rising', 'Rising', ''), ('watching', 'Watching', 'Rising on about three mentions: a hint, not a finding.'), ('new', 'New this week', ''), ('fading', 'Fading', ''), ('cluster', 'Clusters forming', 'Entities mentioned together for the first time, or far more often than before, grouped into stories by shared articles.' if brief.graph == 'neo4j' else 'Pairs mentioned together more often than in the four weeks before (graph unavailable this week).')] %}
+    {% set items = brief.signals | selectattr('kind', 'equalto', kind) | list %}
+    {% if items %}
+    <section class="panel">
+      <h3>{{ title }}</h3>
+      {% if note %}<p class="hint" style="margin:0 0 8px">{{ note }}</p>{% endif %}
+      <ol class="reading brief-list">
+        {% for s in items %}
+        <li class="read">
+          <div>
+            <span class="title">{{ s.name }}</span>{% if s.new %}<span class="new">NEW</span>{% endif %}
+            <div class="meta"><span>{{ 'story' if s.entities else (s.type or 'pair') }}</span><span>{{ s.current }} mentions{% if s.baseline is defined %} vs {{ '%g' % s.baseline }}/week{% endif %}</span><span>{{ conf(s.confidence) }}</span>{% if s.families %}<span>{{ s.families }} source famil{{ 'y' if s.families == 1 else 'ies' }}</span>{% endif %}</div>
+            {% if so[s.sid] %}<p class="sowhat"><span class="label">So what</span>{{ so[s.sid] }}</p>{% endif %}
+            {% if s.lens %}<p class="hint lens-link"><span class="label">Lens link</span>{% for x in s.lens %}{% if not loop.first %}; {% endif %}{% if x.self %}is itself {{ x.target }}{% else %}{{ x.target }} ({{ x.articles }} article{{ '' if x.articles == 1 else 's' }}{% if x.evidence %}: <a href="{{ x.evidence[0].url }}" target="_blank" rel="noopener">{{ x.evidence[0].title }}</a>{% endif %}){% endif %}{% endfor %}</p>{% endif %}
+            {% if s.evidence %}<details><summary>Evidence ({{ s.evidence | length }})</summary><ol>{% for e in s.evidence %}<li><a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title }}</a> <span>{{ day(e.date) }} · {{ src(e.source) }}</span></li>{% endfor %}</ol></details>{% endif %}
+          </div>
+          <div></div>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+    {% endfor %}
+  </div>
+  <div class="stack">
+    {% if brief.lens_items %}
+    <section class="panel"><h3>Through your lens</h3>
+      <ol class="sources">{% for e in brief.lens_items %}<li><a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title }}</a> <span class="hint">{{ day(e.date) }} · {{ src(e.source) }}</span></li>{% endfor %}</ol>
+    </section>{% endif %}
+    {% set sig = brief.by_sid %}
+    {% if p.learning %}
+    <section class="panel"><h3>Learning radar</h3>
+      {% for x in p.learning %}<div class="idea"><b>{{ sig[x.sid].name if x.sid in sig else x.sid }}</b><p>{{ x.why }}</p><p class="sowhat"><span class="label">Project</span>{{ x.project }}</p></div>{% endfor %}
+      <p class="hint">Built from rising technologies and concepts; skill extraction is still too thin to use.</p>
+    </section>{% endif %}
+    {% if p.opportunities %}
+    <section class="panel"><h3>Opportunity ideas</h3>
+      {% for x in p.opportunities %}<div class="idea"><b>{{ x.idea }}</b>
+        <div class="meta"><span>client: {{ x.target_client }}</span></div>
+        <p>{{ x.problem }}</p><p class="sowhat"><span class="label">Why now</span>{{ x.why_now }}</p>
+        <div class="byline">evidence: {{ x.evidence_ids | length }} item{{ '' if x.evidence_ids | length == 1 else 's' }}</div></div>{% endfor %}
+    </section>{% endif %}
+    <section class="panel"><h3>Coverage</h3>
+      <div class="bars">{% set mx = (brief.coverage.by_source.values() | max) or 1 %}{% for k, v in brief.coverage.by_source.items() %}
+        <div class="barrow"><span>{{ src(k) }}</span><span class="track"><span class="fill" style="display:block;width:{{ (100 * v / mx) | round(1) }}%"></span></span><span class="n">{{ v }}</span></div>{% endfor %}</div>
+      <div class="watch">{% for w in brief.coverage.watchlist %}<div class="{{ 'zero' if w.week == 0 else '' }}"><span>{{ w.term }}</span><b>{{ w.week }}</b></div>{% endfor %}</div>
+      <p class="hint">Watchlist mentions this week. A zero means the sources don't cover it.</p>
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

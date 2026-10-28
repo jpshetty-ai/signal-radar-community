@@ -1,0 +1,41 @@
+# Hosting of the PUBLIC edition (ADR-0014). Read by `signal-radar deploy` and the public site build.
+# Only data/site_public/ is ever uploaded. Viewer email addresses are personal data: they live in
+# config/viewers.txt (one per line, Git-ignored), never in this file.
+
+publisher: Your Name
+# Footer of every public page. {year} and {publisher} are filled in at build time.
+notice: >-
+  © {year} {publisher} · A private preview for invited readers.
+  Signals are generated automatically from public news and may be incomplete or wrong.
+  Headlines link to the original publishers, whose content remains theirs.
+  Not investment, legal or regulatory advice.
+
+# Left out of the public edition and the single-file share entirely: items, counts, labels (ADR-0015).
+# AlphaSignal's terms (alphasignal.ai/terms §7.2) allow personal, non-commercial use only (ADR-0015).
+# Bay Area Letters publishes no terms of use: private reading only until it grants permission (ADR-0016).
+exclude_sources: [alphasignal, bayarealetters]
+
+# Public edition only; each appears only when set (empty = left out).
+# web_analytics_token: Cloudflare Web Analytics (cookieless). Dashboard > Analytics & Logs > Web Analytics >
+#   Add a site > <your-project>.pages.dev > manual JS snippet; copy the token. Public by design (page source).
+web_analytics_token:
+# web_analytics_pages: false when Web Analytics is turned on in the Pages project (Workers & Pages >
+#   <your-project> > Metrics): Cloudflare then adds the beacon itself, so leave the token empty (no double count)
+web_analytics_pages: false
+# feedback_url: link in the footer; a mailto: link needs no form provider (e.g. an EU-hosted form such as Tally)
+feedback_url: ""
+# privacy_contact: shown in the privacy note on the Method page; empty = "reply to your invitation email"
+privacy_contact: ""
+
+# Run `deploy` at the end of `signal-radar daily`. Turn on only after a first manual deploy works (docs/hosting.md).
+daily: false
+
+cloudflare:
+  project: my-signal-radar         # Pages project; the URL is <subdomain>.pages.dev (Cloudflare may add a suffix)
+  production_branch: main
+  account_id_env: CLOUDFLARE_ACCOUNT_ID       # not a secret, but kept out of Git with the token (.env)
+  token_keyring_service: signal-radar-cloudflare   # macOS keychain: service name, account = the account id
+  token_env: CLOUDFLARE_API_TOKEN             # fallback for runs without a keychain
+  viewers_file: config/viewers.txt
+  session_duration: 168h                      # a viewer re-enters an email PIN once a week
+  wrangler: [npx, --yes, wrangler@4]

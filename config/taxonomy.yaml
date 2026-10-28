@@ -1,0 +1,53 @@
+# Market map categories, relevance lens and ontology used by entity extraction (ADR-0010).
+# Edit freely: changing this file changes what the extraction model is asked, no code changes needed.
+# After editing categories or the lens, re-run `signal-radar extract --redo` to re-classify the corpus.
+
+categories:
+  ai_models_labs: "Foundation models and AI labs: model releases, benchmarks, pricing, lab strategy"
+  agents_devtools: "Agents and developer tools: coding agents, agent frameworks, MCP, IDEs, developer workflows"
+  ai_infrastructure: "AI infrastructure and compute: chips, GPUs, data centres, inference and training infrastructure, cloud"
+  data_platforms: "Data platforms and engineering: databases, vector stores, data pipelines, analytics, data quality"
+  enterprise_adoption: "Enterprise AI adoption: how organisations deploy AI, productivity, ROI, operating model, workforce"
+  it_services_consulting: "IT services and consulting market: system integrators, consultancies, outsourcing, services pricing and business models"
+  security_risk: "Security and AI risk: cyber security, AI safety, misuse, vulnerabilities, model risk"
+  regulation_governance: "Regulation and governance: EU AI Act, AI policy, compliance, standards, AI governance, privacy law"
+  financial_services: "AI and technology in financial services: banking, insurance, payments, fintech, risk and compliance in FS"
+  startups_funding: "Startups, funding and M&A: rounds, valuations, acquisitions, IPOs, market structure"
+  research: "Research and papers: academic results, new techniques, evaluations"
+  business_strategy: "Business strategy and management: go-to-market, pricing, hiring, leadership, company building, markets"
+  consumer_media: "Consumer products, media and design: consumer apps, devices, creative tools, marketing"
+  other: "Anything that fits none of the above"
+
+# Who the relevance score is for. The model scores each item 0-3 against this.
+# Example lens (the author's): replace it with your own role and interests, then `signal-radar extract --redo`.
+lens: >
+  A senior enterprise, data and AI architect working as an independent consultant for financial services
+  firms, focused on risk, compliance, AI governance and the EU AI Act. Highly relevant: regulation and
+  supervision of AI, AI governance and model risk, enterprise architecture and data platforms, enterprise
+  adoption of AI and agents, changes in the IT services and consulting market, AI in banking and insurance,
+  and major shifts in the AI vendor landscape that affect enterprise buyers. Less relevant: consumer apps,
+  gaming, creative tools, hardware specs, and purely academic results without an enterprise angle.
+
+# Calibrated on purpose: most news is 0 or 1. Inflation makes the reading list useless.
+relevance_scale:
+  0: "not relevant to this reader (most consumer, gaming, hardware, hiring and personal-productivity news)"
+  1: "general AI/tech background worth knowing exists (most model releases, dev tools, research)"
+  2: "the item itself is about enterprises, data platforms, governance, security risk, regulation or the IT services market"
+  3: "rare, about 1 item in 20: the item is directly about AI regulation or supervision, AI governance or model risk, AI in banking/insurance/payments, or a major shift in how enterprises buy AI"
+
+# Ontology (CLAUDE.md). Entity types and relations the model may use.
+entity_types: [Technology, Concept, Company, Product, Person, Regulation, Industry, Skill]
+relations: [RELEASED_BY, COMPETES_WITH, ENABLES, BUILT_ON, REGULATES, ADOPTED_IN, REQUIRES_SKILL]
+
+# Terms the reader must not miss. The site shows how often each appears in the corpus (full text, 90 days):
+# a zero here is a blind spot in the sources, not good news.
+watchlist: [EU AI Act, DORA, GDPR, AI Office, EBA, ECB, FCA, SEC, NIST, ISO 42001, model risk, AI governance, Basel, MiCA, explainability]
+
+# Categories that matter most to the lens; the blind-spots panel compares their share of the corpus.
+lens_categories: [regulation_governance, financial_services, enterprise_adoption, it_services_consulting, data_platforms, security_risk]
+
+# Entities that stand for the reader's market in the graph (ADR-0018). A brief signal gets a reader-specific
+# "so what" only when an article mentions it together with one of these. Canonical names (aliases.yaml applies);
+# names with no entity yet are listed by `graph_signals.lens_targets` as missing. Not part of extraction.
+lens_targets: [Financial services, Fintech, Payments, Insurance, Open banking, EU AI Act, AI Office, AI governance,
+  Model risk, explainability, SEC, FCA, ECB, EBA, DORA, GDPR, MiCA, Basel, NIST, ISO 42001, Digital Services Act]

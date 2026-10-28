@@ -1,0 +1,29 @@
+# Where the Graqle graph is served from (ADR-0017). Read by scripts/sync_graqle_config.py (-> graqle.yaml) and
+# by `signal-radar graph sync`.
+#
+# The daily job always builds data/graqle/graqle.json first: that file is the source of truth (graqle's "Tier 0").
+# With connector: neo4j, `signal-radar graph sync` makes the Neo4j database an exact copy of it, and the graq MCP
+# server and `graq reason` read Neo4j (falling back to the file if Neo4j is unreachable).
+
+connector: networkx            # networkx (read the file, no server) | neo4j (read the Neo4j copy, optional)
+file: data/graqle/graqle.json
+
+neo4j:
+  uri: bolt://localhost:7687   # e.g. Neo4j Desktop (ADR-0017)
+  database: signalradar        # the sync refuses neo4j and system
+  username: signal_radar       # a user that can reach this database only
+  # Password: this environment variable, else the macOS keychain (service signal-radar, account = the same name).
+  # Deliberately not NEO4J_PASSWORD, which holds the admin password of the shared instance.
+  password_env: SIGNAL_RADAR_NEO4J_PASSWORD
+
+sync:
+  daily: true                  # run after the daily graph build; a failure is reported, the data run stands
+  batch_size: 500
+  timeout_seconds: 600
+  max_node_delete_fraction: 0.2  # refuse a sync that would delete more than this share of nodes (a broken build)
+
+embed:                         # vector search (ADR-0019): `signal-radar graph embed`, also run by daily after the sync
+  daily: true                  # embeds only new or changed texts (~100 a day, seconds); unchanged ones are cached
+  max_minutes: 10              # hard budget per run; Ctrl+C or a cap keeps finished batches, the next run continues
+  max_chunks: 5000
+

@@ -1,0 +1,51 @@
+{% from "macros.html" import day %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Signal Radar{% endblock %}</title>
+{% if edition == 'public' %}<meta name="robots" content="noindex, nofollow">{% endif %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Martian+Mono:wdth,wght@75..112.5,400..600&display=swap">
+<link rel="stylesheet" href="static/radar.css">
+</head>
+<body data-edition="{{ edition }}">
+<header class="bar">
+  <div class="wrap">
+    <a class="wordmark" href="{{ href('today') }}" aria-label="Signal Radar home">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="9" x2="15.5" y2="5" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/></svg>
+      SIGNAL RADAR
+    </a>
+    <nav aria-label="Views">
+      <a href="{{ href('today') }}" data-view="today" {% if page == 'today' %}aria-current="page"{% endif %}>Today</a>
+      <a href="{{ href('brief') }}" data-view="brief" {% if page == 'brief' %}aria-current="page"{% endif %}>Brief</a>
+      <a href="{{ href('explore') }}" data-view="explore" {% if page == 'explore' %}aria-current="page"{% endif %}>Explore</a>
+      <a href="{{ href('method') }}" data-view="method" {% if page == 'method' %}aria-current="page"{% endif %}>Method</a>
+    </nav>
+    <span class="asof">data to {{ day(meta.as_of) }} · {{ "{:,}".format(meta['items']) }} items · {{ meta.sources | length }} sources</span>
+    {% if edition == 'console' %}<button class="btn primary" id="ask-open" type="button">Ask</button>{% endif %}
+  </div>
+</header>
+<main class="wrap">
+{% block main %}{% endblock %}
+</main>
+{% if footer %}<footer class="wrap share-note">{{ footer }}{% if site.feedback_url %} <a href="{{ site.feedback_url }}"{% if not site.feedback_url.startswith('mailto:') %} target="_blank" rel="noopener"{% endif %}>Send feedback</a>.{% endif %} <a href="{{ href('method', 'privacy') }}">Privacy</a>.</footer>{% endif %}
+{% if edition == 'public' and site and site.analytics_token %}<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{ site.analytics_token }}"}'></script>{% endif %}
+{% if edition == 'console' %}
+<aside class="drawer" id="ask" hidden aria-label="Ask the data">
+  <header><span class="eyebrow">Ask the data</span><button class="btn" id="ask-close" type="button">Close</button></header>
+  <div class="log" id="ask-log">
+    <p class="empty">Questions are answered only from the corpus and trend data, with the items used listed under each answer. Try: “What happened around AI model risk in the last month?”</p>
+  </div>
+  <form id="ask-form">
+    <label class="eyebrow" for="ask-q">Question</label>
+    <textarea id="ask-q" name="q" required placeholder="What is moving in agent security?"></textarea>
+    <button class="btn primary" type="submit">Ask</button>
+  </form>
+</aside>
+<script src="static/console.js" defer></script>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,55 @@
+# Single source of truth for every model this project calls.
+# llm.py reads this file; scripts/sync_graqle_config.py generates graqle.yaml from it.
+# Override per run: signal-radar --model extraction=ollama/llama3.1:8b ...
+# The model string may itself contain "/" (e.g. openai-compatible hubs); only the first "/" splits provider from model.
+
+roles:
+  extraction:
+    # High volume, structured JSON out. Local and free so re-running extraction over the corpus costs nothing.
+    provider: ollama
+    model: qwen3:8b
+    params:
+      temperature: 0
+      think: false          # qwen3 reasoning off for bulk extraction
+      num_ctx: 8192
+  reasoning:
+    provider: anthropic
+    model: claude-opus-5-5
+    params:
+      max_tokens: 16000
+      effort: high          # Opus 5.5 defaults to medium; signal analysis benefits from high
+      fallbacks: default    # server-side refusal fallback (Claude API only)
+  writing:
+    provider: anthropic
+    model: claude-opus-5-5
+    params:
+      max_tokens: 16000
+      effort: medium
+      fallbacks: default
+  embedding:
+    provider: ollama
+    model: nomic-embed-text
+    params: {}
+
+providers:
+  ollama:
+    host_env: OLLAMA_HOST
+    default_host: http://localhost:11434
+    timeout_s: 300
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    timeout_s: 600
+  openai:
+    # Also covers any OpenAI-compatible server (LM Studio, vLLM, OpenRouter) via base_url.
+    api_key_env: OPENAI_API_KEY
+    base_url: null
+    timeout_s: 600
+
+# USD per 1M tokens. Used only for the cost log. Unknown model -> cost is recorded as null, never guessed.
+# Anthropic first-party rates as of 2026-09-25.
+pricing:
+  anthropic/claude-opus-5-5: {input: 4.00, output: 20.00, cache_read: 0.20}
+  anthropic/claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_read: 0.20}
+  anthropic/claude-haiku-4-5: {input: 1.00, output: 5.00}
+  anthropic/claude-opus-4-8: {input: 5.00, output: 25.00}   # a refusal fallback may land here
+  ollama/*: {input: 0, output: 0}

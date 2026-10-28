@@ -1,0 +1,27 @@
+# Canonical entity name -> other spellings the extraction model produces. Keys are normalised (case, spaces,
+# punctuation, possessives and "Inc."/"Ltd" are ignored already), so list only real variants.
+# After editing: `signal-radar signals rebuild` (no LLM calls needed).
+Google DeepMind: [DeepMind, Google Deepmind]
+Google: [Alphabet, Google LLC]
+Meta: [Meta Platforms, Facebook, Meta AI]
+Microsoft: [MSFT]
+Amazon Web Services: [AWS]
+OpenAI: [Open AI]
+Anthropic: [Anthropic PBC]
+xAI: [X.AI]
+Nvidia: [NVIDIA Corporation]
+Hugging Face: [HuggingFace]
+EU AI Act: [AI Act, European AI Act, EU Artificial Intelligence Act, Artificial Intelligence Act]
+Model Context Protocol: [MCP]
+Retrieval-augmented generation: [RAG, Retrieval Augmented Generation]
+AI agents: [Agents, Agent, Agentic AI, AI agent, autonomous agents]
+Claude Code: [Claude Code CLI]
+GPT-6 Astra: [Astra]
+GPT-6 Sol: [Sol]
+GPT-6 Luna: [Luna]
+# The reader's market, split over many spellings by the extraction model (ADR-0018). "Finance teams" (the
+# corporate finance function) is deliberately not merged: it is a buyer, not the financial-services industry.
+Financial services: [Financial Services, finance, banking, Bank, Banks, Financial firms, financial institutions, Financial markets, Financial system, Traditional banking, Traditional finance, financial sector, financial industry]
+Fintech: [FinTech, fintechs, AI fintech, European fintech, Nordic fintech]
+Payments: [payment, SME payments]
+Insurance: [insurers, insurance industry]

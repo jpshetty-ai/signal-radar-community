@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "signal-sources": {
+      "type": "stdio",
+      "command": ".venv/bin/signal-sources-mcp",
+      "args": []
+    }
+  }
+}

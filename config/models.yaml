@@ -1,0 +1,165 @@
+# Single source of truth for every model this project calls (ADR-0002, ADR-0013).
+# llm.py reads this file; scripts/sync_graqle_config.py generates graqle.yaml from it.
+# Per run: signal-radar --model writing=@glm-5.3 ...  (catalog id)  or  --model writing=ollama/qwen3:8b
+#
+# A role is either one concrete model (provider + model) or ranked catalog candidates with a strategy:
+#   first_available   try candidates in the listed order, fall through on any failure
+#   cheapest_passing  cheapest candidate whose last `signal-radar models eval` quality for this role is
+#                     >= min_quality, then the rest in listed order (data/model_eval.json)
+# The last candidate should always be local, so the pipeline keeps working without keys, network or budget.
+
+roles:
+  extraction:
+    # High volume, structured JSON out. Local and free so re-running extraction over the corpus costs nothing.
+    provider: ollama
+    model: qwen3:8b
+    params:
+      temperature: 0
+      think: false          # qwen3 reasoning off for bulk extraction
+      num_ctx: 8192
+  reasoning:
+    # Ask answers. Eval 20261005T091511 (blind-graded): gpt-6-luna 0.94, sonnet-5.5 0.95, mimo 0.91, local 0.67.
+    # cheapest_passing picks gpt-6-luna; sonnet-5.5 is the quality fallback; local keeps it working offline.
+    candidates: [gpt-6-luna, sonnet-5.5, mimo-v2.6-pro, local-qwen3-8b]
+    strategy: cheapest_passing
+    min_quality: 0.85
+  writing:
+    # Theme cards and the weekly brief. Eval 20261005T091511 (blind-graded): gpt-6-luna 0.92, sonnet-5.5 0.95,
+    # mimo 0.86, local 0.74. glm-5.3 dropped (3 of 6 writing tasks returned invalid JSON).
+    candidates: [gpt-6-luna, sonnet-5.5, mimo-v2.6-pro, local-qwen3-8b]
+    strategy: cheapest_passing
+    min_quality: 0.85
+  embedding:
+    # Vector search (ADR-0019): in-process ONNX model, 384 dimensions, 67 MB, MIT. No Ollama needed.
+    # BGE is asymmetric: questions get this instruction, stored passages do not (embed(kind="query")).
+    provider: fastembed
+    model: BAAI/bge-small-en-v1.5
+    params:
+      query_prefix: "Represent this sentence for searching relevant passages: "
+      batch_size: 64
+
+# Paid calls stop when this month's priced spend reaches the cap; roles then fall through to local.
+# Set it to what you are willing to spend; 0 keeps everything local.
+budget:
+  monthly_usd: 5
+
+providers:
+  fastembed: {}                # in-process embeddings; no host, no key
+  ollama:
+    host_env: OLLAMA_HOST
+    default_host: http://localhost:11434
+    timeout_s: 300
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    timeout_s: 600
+  openai:
+    api_key_env: OPENAI_API_KEY
+    base_url: null
+    timeout_s: 600
+  openrouter:
+    # One key, many models. Key: OPENROUTER_API_KEY in .env, or the macOS keychain
+    # (security add-generic-password -s signal-radar -a OPENROUTER_API_KEY -w).
+    kind: openai
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    timeout_s: 180
+    headers: {X-Title: Signal Radar}
+    extra_body:
+      provider:
+        data_collection: deny      # only providers that do not store or train on prompts
+        zdr: true                  # zero data retention endpoints only
+        require_parameters: true   # only providers that support structured output for our schema
+
+# Model catalog. Prices in USD per 1M tokens (OpenRouter list prices, checked 2026-10-04).
+# Benchmarks (Artificial Analysis Intelligence Index) are a hint; our own eval decides.
+catalog:
+  local-qwen3-8b:
+    provider: ollama
+    model: qwen3:8b
+    params: {temperature: 0, think: false, num_ctx: 8192}
+    price: {input: 0, output: 0}
+    data_policy: local, nothing leaves the Mac
+  mimo-v2.6-pro:
+    provider: openrouter
+    model: xiaomi/mimo-v2.6-pro
+    params: {temperature: 0.2, max_tokens: 4000}
+    price: {input: 0.435, output: 0.87}
+    data_policy: OpenRouter, no-retention providers only
+    notes: top open-weights Intelligence Index (46), Sep 2026
+  glm-5.3:
+    provider: openrouter
+    model: z-ai/glm-5.3
+    params: {temperature: 0.2, max_tokens: 4000}
+    price: {input: 1.40, output: 4.40}
+    data_policy: OpenRouter, no-retention providers only
+    notes: Intelligence Index 45
+  deepseek-v4-pro:
+    provider: openrouter
+    model: deepseek/deepseek-v4-pro-0813
+    params: {temperature: 0.2, max_tokens: 4000}
+    price: {input: 0.55, output: 4.20}
+    data_policy: OpenRouter, no-retention providers only
+  kimi-k3:
+    provider: openrouter
+    model: moonshotai/kimi-k3
+    params: {temperature: 0.2, max_tokens: 4000}
+    price: {input: 0.72, output: 13.00}
+    data_policy: OpenRouter, no-retention providers only
+    notes: Intelligence Index 44; expensive output
+  gpt-6-luna:
+    provider: openrouter
+    model: openai/gpt-6-luna
+    params: {max_tokens: 4000}   # no temperature: rejected, and require_parameters then finds no endpoint
+    price: {input: 0.10, output: 0.50}
+    data_policy: OpenRouter, no-retention providers only
+    notes: Intelligence Index 37, very cheap
+  glm-5.3-flash:
+    provider: openrouter
+    model: z-ai/glm-5.3-flash
+    params: {temperature: 0.2, max_tokens: 4000}
+    price: {input: 0.15, output: 0.50}
+    data_policy: OpenRouter, no-retention providers only
+  gemini-3.8-flash:
+    provider: openrouter
+    model: google/gemini-3.8-flash
+    params: {max_tokens: 4000}   # no temperature: rejected, and require_parameters then finds no endpoint
+    price: {input: 0.75, output: 3.75}
+    data_policy: OpenRouter, no-retention providers only
+    notes: Intelligence Index 41
+  sonnet-5.5:
+    provider: openrouter
+    model: anthropic/claude-sonnet-5.5
+    params: {max_tokens: 4000}   # no temperature: rejected, and require_parameters then finds no endpoint
+    price: {input: 2.00, output: 10.00}
+    data_policy: OpenRouter, no-retention providers only
+    notes: reference quality (Intelligence Index 56)
+  opus-5.5:
+    provider: openrouter
+    model: anthropic/claude-opus-5.5
+    params: {max_tokens: 4000}   # no temperature: rejected, and require_parameters then finds no endpoint
+    price: {input: 4.00, output: 20.00}
+    data_policy: OpenRouter, no-retention providers only
+    notes: reference quality ceiling (Intelligence Index 58)
+  opus-5.5-direct:
+    provider: anthropic
+    model: claude-opus-5-5
+    params: {max_tokens: 16000, effort: high, fallbacks: default}
+    price: {input: 4.00, output: 20.00, cache_read: 0.20}
+    data_policy: Anthropic API directly
+
+# Judges for `signal-radar models eval --judge <id>`: non-chat models that grade outputs (ADR-0013).
+# Catalog models can judge too (--judge sonnet-5.5); these are cheaper, typed alternatives.
+judges:
+  jev:
+    kind: typesafe
+    model: jev-1.13.0
+    api_key_env: TYPESAFE_API_KEY      # .env or keychain: security add-generic-password -s signal-radar -a TYPESAFE_API_KEY -w
+    price_input_per_million: 0.042     # output tokens are free (docs.typesafe.ai/models, 2026-10-04)
+
+# Legacy price table for concrete provider/model roles and CLI overrides. Unknown -> cost logged as null.
+pricing:
+  anthropic/claude-opus-5-5: {input: 4.00, output: 20.00, cache_read: 0.20}
+  anthropic/claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_read: 0.20}
+  anthropic/claude-haiku-4-5: {input: 1.00, output: 5.00}
+  anthropic/claude-opus-4-8: {input: 5.00, output: 25.00}   # a refusal fallback may land here
+  ollama/*: {input: 0, output: 0}

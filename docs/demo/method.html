@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Radar · Method</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Martian+Mono:wdth,wght@75..112.5,400..600&display=swap">
+<link rel="stylesheet" href="static/radar.css">
+</head>
+<body data-edition="public">
+<header class="bar">
+  <div class="wrap">
+    <a class="wordmark" href="index.html" aria-label="Signal Radar home">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="9" x2="15.5" y2="5" stroke="currentColor" stroke-width="1.2"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/></svg>
+      SIGNAL RADAR
+    </a>
+    <nav aria-label="Views">
+      <a href="index.html" data-view="today" >Today</a>
+      <a href="brief.html" data-view="brief" >Brief</a>
+      <a href="explore.html" data-view="explore" >Explore</a>
+      <a href="method.html" data-view="method" aria-current="page">Method</a>
+    </nav>
+    <span class="asof">data to 28 Oct · 205 items · 4 sources</span>
+    
+  </div>
+</header>
+<main class="wrap">
+
+<article class="prose">
+  <span class="eyebrow">Method</span>
+  <p>Signal Radar reads newsletters, stores one record per news item, classifies each item with a language model and counts how often companies, products and topics are mentioned over time. Everything on these pages is computed from that record; nothing is typed in by hand.</p>
+
+  <h2>Sources</h2>
+  <table>
+    <tr><th>Source</th><th>Items</th></tr>
+    <tr><td>digest</td><td class="mono">110</td></tr><tr><td>wire</td><td class="mono">44</td></tr><tr><td>eurotech</td><td class="mono">32</td></tr><tr><td>policywatch</td><td class="mono">19</td></tr>
+  </table>
+  <p>Coverage runs from 3 Sep to 28 Oct. The newsletters are written for AI builders, so regulation and financial services are thinly covered; the blind-spots panel on the Today page shows how thinly. Newsletters whose terms allow personal use only, or that publish no terms, are left out of this edition entirely: their items, and their mentions in every count.</p>
+
+  <h2>Themes</h2>
+  <p>Themes are found by counting, not by a model. A momentum theme starts from an entity whose mentions rose most against its own baseline and adds the entities most often mentioned with it. The lens theme is built only from items rated relevant to the reader. A model then writes the title and two sentences from the theme's items, and the card names that model.</p>
+
+  <h2>Rising and fading</h2>
+  <p>Mentions in the last 14 days are compared with the average of the four 14-day windows before. Score = (current − baseline) / √(baseline + 1), so going from 10 to 30 mentions outranks going from 0 to 3.</p>
+  <p>Confidence: <span class="conf" title="confidence: high" aria-label="confidence high">●●●</span> high means at least 8 items from both source families; <span class="conf" title="confidence: medium" aria-label="confidence medium">●●<span class="off">●</span></span> medium means at least 4; <span class="conf" title="confidence: low" aria-label="confidence low">●<span class="off">●</span><span class="off">●</span></span> low is a hint, not a finding.</p>
+
+  <h2>Relevance and reading list</h2>
+  <p>Each item gets a relevance score from 0 to 3 for this reader: A senior enterprise, data and AI architect working as an independent consultant for financial services firms, focused on risk, compliance, AI governance and the EU AI Act. Highly relevant: regulation and supervision of AI, AI governance and model risk, enterprise architecture and data platforms, enterprise adoption of AI and agents, changes in the IT services and consulting market, AI in banking and insurance, and major shifts in the AI vendor landscape that affect enterprise buyers. Less relevant: consumer apps, gaming, creative tools, hardware specs, and purely academic results without an enterprise angle.</p>
+  <p>The reading list ranks the last 7 days by relevance, then by whether more than one independent source covered the story, the momentum of its entities. The same story from two editions is shown once.</p>
+  <p>Your + and − votes in the console teach the ranking once there are at least three: items about entities and categories you liked move up, those like items you dismissed move down, by at most 0.8 points, so relevance still decides. Each moved item says why. A − also hides that item.</p>
+
+  <h2>Models</h2>
+  <p>Classification and entity extraction run on a local model on this computer. Theme summaries and answers use the configured writing and reasoning models. The local model is cheap and private but makes mistakes: categories and entity types are sometimes wrong, and summaries can overstate. Every claim links to its source items so it can be checked.</p>
+
+  <h2>What leaves this computer</h2>
+  <p>The pipeline reads Gmail (read-only), the public tldr.tech archive, and public RSS feeds (EU AI Act Newsletter, Sifted, Tech.eu, European Commission digital strategy). Questions asked in the console are answered locally unless a cloud model is configured. Built 2026-10-28 14:45 UTC.</p>
+
+  <h2 id="privacy">Privacy</h2>
+  <p>Signal Radar demo publishes this preview and is the controller of the personal data below under the GDPR. We collect as little as the preview needs.</p>
+  <ul>
+    <li><strong>Login.</strong> Your email address is on the invitation list, and you use it to receive a one-time PIN. Cloudflare Access, which runs the login for us as our processor, records each login (email, time, IP address) for security. The login sets one cookie that keeps you signed in for 7 days; it is needed for the login and is the only cookie. Legal basis: our legitimate interest in showing the preview only to invited readers. Your address stays on the list until you ask to be removed or the preview ends.</li>
+    
+    
+    <li><strong>Where.</strong> Cloudflare may process data outside the EU, under the EU-US Data Privacy Framework and the EU standard contractual clauses. Nothing is sold, used for advertising or shared with anyone else.</li>
+  </ul>
+  <p>You can ask for a copy of your data, correct it, have it deleted or object to its use: reply to your invitation email. You can also complain to the data protection authority where you live or work.</p>
+
+</article>
+
+</main>
+<footer class="wrap share-note">Signal Radar demo · Synthetic data: every company, headline and link is invented to show how the pipeline works. <a href="method.html#privacy">Privacy</a>.</footer>
+
+
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+# Source subscriptions. Edit by hand or through the MCP tools subscribe_source / unsubscribe_source.
+# Two kinds of subscription:
+#   - feed (rss/atom, hn, arxiv, github): subscribing = adding an entry here; the adapter polls it.
+#   - email_newsletter: you sign up once on the publisher's site with the address of a mail account below;
+#     the entry here tells the adapter which messages in that mailbox belong to the source.
+# Credentials never live here: accounts reference env var names / keychain entries only.
+
+mail_accounts:
+  gmail:
+    kind: imap                     # Gmail app password in the macOS keychain, read-only EXAMINE (ADR-0008)
+    host: imap.gmail.com
+    user_env: IMAP_GMAIL_USER
+    keyring_service: signal-radar-imap
+  work:
+    kind: graph                    # Microsoft 365 via Graph, delegated Mail.Read (ADR-0007)
+    tenant_id_env: M365_TENANT_ID
+    client_id_env: M365_CLIENT_ID
+    user_env: M365_USER
+    keychain_service: signal-radar-m365
+
+# Email newsletters ship disabled: subscribe on the publisher's site with your own address, set up the account
+# (README, "Email newsletters"), then set enabled: true. A Gmail filter can label them "Newsletters"
+# (from:tldrnewsletter.com OR alphasignal.ai). Check each publisher's terms before publishing anything (ADR-0015).
+# TL;DR sends every edition from the same address; the sender display name is what tells them apart
+# (seen: TLDR AI, IT, Founders, Design, Dev, DevOps, Marketing). Add one with subscribe_source.
+sources:
+  - id: tldr_ai
+    type: email_newsletter
+    enabled: false
+    account: gmail
+    folder: Newsletters
+    match:
+      from: ["@tldrnewsletter.com"]
+      from_name: ["TLDR AI"]
+    parser: tldr
+    archive:                       # history backfill (ADR-0009)
+      url: https://tldr.tech/ai/{date}
+      parser: tldr_web
+    tags: [ai, newsletter]
+
+  - id: tldr_tech
+    type: email_newsletter
+    enabled: false
+    account: gmail
+    folder: Newsletters
+    match:
+      from: ["@tldrnewsletter.com"]
+      from_name: ["TLDR"]          # the flagship daily
+      subject_excludes: ["Confirm your signup"]
+    parser: tldr
+    archive:                       # history backfill (ADR-0009)
+      url: https://tldr.tech/tech/{date}
+      parser: tldr_web
+    tags: [tech, newsletter]
+
+  - id: tldr_founders
+    type: email_newsletter
+    enabled: false
+    account: gmail
+    folder: Newsletters
+    match:
+      from: ["@tldrnewsletter.com"]
+      from_name: ["TLDR Founders"]
+    parser: tldr
+    archive:                       # history backfill (ADR-0009)
+      url: https://tldr.tech/founders/{date}
+      parser: tldr_web
+    tags: [startups, newsletter]
+
+  - id: alphasignal
+    type: email_newsletter
+    enabled: false
+    account: gmail
+    folder: Newsletters
+    match:
+      from: ["@alphasignal.ai"]
+    parser: alphasignal            # email only, items link to the issue page (never fetched, ADR-0015); not in the public edition
+    tags: [ai, developer, newsletter]
+
+  - id: bayarealetters
+    type: email_newsletter
+    enabled: false
+    account: gmail
+    folder: "[Gmail]/All Mail"     # arrives in the inbox, not the Newsletters label; the sender is searched on the server
+    match:
+      from: ["bayarealetters@mail.wirely.so"]
+    parser: bayarealetters         # email only, links are tracked redirects, never followed; private only (ADR-0016)
+    tags: [tech, business, newsletter]
+
+  - id: simon_willison
+    type: rss
+    enabled: false
+    url: https://simonwillison.net/atom/everything/
+    tags: [ai, llm, practitioner]
+
+# European coverage, on by default: public feeds, no account needed. RSS feeds keep only their newest entries: Sifted ~4 days, Tech.eu ~3 days,
+# so ingest must run at least every 2-3 days or items are lost. The id prefix before "_" is the source family
+# (signals._family), so each of these counts as an independent source.
+  - id: aiact_newsletter
+    type: rss
+    enabled: true
+    url: https://artificialintelligenceact.substack.com/feed   # Future of Life Institute; paid posts show free preview
+    edition: EU AI Act Newsletter
+    strip:                         # same intro on every podcast episode
+      - "Welcome to The EU AI Act Conversations, a podcast with Risto Uuk exploring the implementation, enforcement and impact of Europe.s AI law\\."
+    tags: [eu, regulation, ai-act]
+
+  - id: sifted
+    type: rss
+    enabled: true
+    url: https://sifted.eu/feed
+    page_meta: true                # feed is title-only; summary comes from the article's og:description
+    tags: [eu, startups, newsletter]
+
+  - id: techeu
+    type: rss
+    enabled: true
+    url: https://tech.eu/feed/
+    tags: [eu, tech]
+
+  - id: ec_digital
+    type: rss
+    enabled: true
+    url: https://digital-strategy.ec.europa.eu/en/rss.xml   # European Commission, Shaping Europe's digital future
+    edition: EC Digital Strategy
+    strip:                         # Drupal author/date line, photo credit, link label
+      - "Anonymous \\(not verified\\)"
+      - "\\b\\w{3}, \\d{2}/\\d{2}/\\d{4} - \\d{2}:\\d{2}\\b"
+      - "©\\s*\\S+"
+      - "Main link\\s+\\S+"
+    tags: [eu, policy, regulation]

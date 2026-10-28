@@ -1,0 +1,23 @@
+{% macro spark(series, w=88, h=22, down=False) -%}
+{%- set mx = (series | max) or 1 -%}
+{%- set n = series | length -%}
+{%- set step = (w - 4) / ((n - 1) or 1) -%}
+<svg class="spark{% if down %} down{% endif %}" width="{{ w }}" height="{{ h }}" viewBox="0 0 {{ w }} {{ h }}" role="img" aria-label="weekly mentions, last {{ n }} weeks: {{ series | join(', ') }}">
+  <polyline fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" points="{% for v in series %}{{ '%.1f' % (2 + loop.index0 * step) }},{{ '%.1f' % (h - 3 - (v / mx) * (h - 6)) }} {% endfor %}"/>
+  <circle cx="{{ '%.1f' % (2 + (n - 1) * step) }}" cy="{{ '%.1f' % (h - 3 - (series[-1] / mx) * (h - 6)) }}" r="2" fill="currentColor"/>
+</svg>
+{%- endmacro %}
+
+{% macro conf(level) -%}
+{%- set n = {'high': 3, 'medium': 2, 'low': 1}[level] -%}
+<span class="conf" title="confidence: {{ level }}" aria-label="confidence {{ level }}">{% for i in range(3) %}{% if i < n %}●{% else %}<span class="off">●</span>{% endif %}{% endfor %}</span>
+{%- endmacro %}
+
+{% macro src(s) -%}
+{{ {'tldr_ai': 'TLDR AI', 'tldr_tech': 'TLDR Tech', 'tldr_founders': 'TLDR Founders', 'alphasignal': 'AlphaSignal', 'bayarealetters': 'Bay Area Letters', 'tldr': 'TL;DR', 'aiact_newsletter': 'EU AI Act Newsletter', 'aiact': 'EU AI Act Newsletter', 'sifted': 'Sifted', 'techeu': 'Tech.eu', 'ec_digital': 'EC Digital Strategy', 'ec': 'EC Digital Strategy'}.get(s, s) }}
+{%- endmacro %}
+
+{% macro day(iso) -%}
+{%- set parts = iso.split('-') -%}
+{{ parts[2] | int }} {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parts[1] | int - 1] }}
+{%- endmacro %}

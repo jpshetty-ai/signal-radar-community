@@ -1,0 +1,27 @@
+# secrets
+.env
+*.pem
+# python
+.venv/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+__pycache__/
+*.egg-info/
+.pytest_cache/
+# runtime data: signal store, LLM call log, graph caches
+data/*
+!data/.gitkeep
+.graqle/
+graqle.json
+*.graqle.json
+traces/
+# viewer email addresses for the hosted public edition (personal data)
+config/viewers.txt
+.DS_Store
+# your instance: newsletter summaries are third-party content. Keep them out of any public fork;
+# in a private repo you may remove these two lines and track your corpus in Git (ADR-0009).
+corpus/
+briefs/
+# output of scripts/demo.py (rebuildable); the GitHub Pages copy lives in docs/demo/
+/demo/

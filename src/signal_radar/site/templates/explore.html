@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Signal Radar · Explore{% endblock %}
+{% block main %}
+<div class="section-head">
+  <h2>Explore</h2>
+  <span class="note">Pick an entity to see what it is mentioned with and the news behind it (last 90 days). Click a neighbour to move there.</span>
+</div>
+<div class="explore">
+  <section class="panel" aria-label="Entities">
+    <label class="eyebrow" for="ent-search">Find</label>
+    <input type="search" id="ent-search" placeholder="Claude, EU AI Act, Nvidia…" autocomplete="off">
+    <div class="typefilter" id="ent-types" role="group" aria-label="Filter by type"></div>
+    <div class="list" id="ent-list"></div>
+  </section>
+  <section class="panel graph" aria-label="Neighbourhood graph">
+    <svg id="graph" viewBox="0 0 720 560" role="img" aria-label="Neighbourhood of the selected entity"></svg>
+    <p class="hint">Inner ring: entities mentioned in the same items (bigger = more often). Outer squares: news items, teal when rated relevant to your lens.</p>
+  </section>
+  <section class="panel entity-panel" id="ent-panel" aria-live="polite"><p class="empty">Loading…</p></section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="static/explore.js" defer></script>{% endblock %}
