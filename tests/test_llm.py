@@ -8,7 +8,8 @@ from signal_radar.calllog import CallLog
 from signal_radar.config import ProviderSettings, RoleSpec, load_models
 
 FIXTURE_MODELS = Path(__file__).parent / "fixtures" / "models_v1.yaml"  # routing mechanics, not live model choices
-from signal_radar.llm import AnthropicClient, LLMError, LLMRefusal, LLMRouter, OllamaClient, RawCompletion, RawEmbedding
+from signal_radar.llm import (AnthropicClient, LLMError, LLMRefusal, LLMRouter, OllamaClient, OpenAIClient,
+                              RawCompletion, RawEmbedding)
 
 
 class FakeProvider:
@@ -156,3 +157,13 @@ def test_anthropic_refusal_raises():
     c, _ = _anthropic_with(_resp(stop="refusal"))
     with pytest.raises(LLMRefusal, match="cyber"):
         c.complete(RoleSpec(provider="anthropic", model="m"), None, [], None, {})
+
+
+def test_openai_compatible_localhost_needs_no_key_but_remote_does(monkeypatch):
+    pytest.importorskip("openai")
+    monkeypatch.setattr("signal_radar.llm._keychain", lambda account: None)
+    monkeypatch.delenv("LOCAL_KEY", raising=False)
+    local = OpenAIClient(ProviderSettings(kind="openai", base_url="http://localhost:1234/v1", api_key_env="LOCAL_KEY"))
+    assert local.client.api_key == "local"
+    with pytest.raises(LLMError, match="no API key"):
+        OpenAIClient(ProviderSettings(kind="openai", base_url="https://openrouter.ai/api/v1", api_key_env="LOCAL_KEY"))

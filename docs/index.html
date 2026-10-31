@@ -76,6 +76,12 @@ h2 { font-size: 26px; letter-spacing: -.01em; margin: 0 0 8px; font-weight: 600;
 .flow svg { display: block; width: 100%; min-width: 760px; height: auto; }
 .flow .box { fill: var(--panel); stroke: var(--rule); }
 .flow .box.key { stroke: var(--accent); fill: var(--accent-soft); }
+.flow .box.opt { stroke-dasharray: 5 4; stroke: var(--faint); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.legend i { display: inline-block; width: 22px; height: 12px; border: 1px solid var(--rule); border-radius: 2px; background: var(--panel); }
+.legend i.o { border: 1px dashed var(--faint); }
+.legend i.k { border-color: var(--accent); background: var(--accent-soft); }
 .flow text { fill: var(--ink); font-family: var(--sans); font-size: 13px; }
 .flow text.t { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; fill: var(--muted); }
 .flow text.n { font-weight: 600; font-size: 14px; }
@@ -154,8 +160,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
   <div class="facts">
     <span><b>MCP</b> server with 13 typed tools</span>
     <span><b>18</b> architecture decision records</span>
-    <span><b>147</b> automated tests</span>
-    <span><b>4</b> LLM providers, one router</span>
+    <span><b>162</b> automated tests</span>
+    <span><b>Local or cloud</b> models, one router</span>
     <span><b>0</b> cloud services required</span>
   </div>
 </div>
@@ -180,13 +186,13 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
   <div class="wrap">
     <p class="eyebrow">Architecture</p>
     <h2>One pipeline, every stage inspectable</h2>
-    <p class="sub">Each stage writes plain files or SQLite you can open, diff and rebuild. The graph and vectors are derived; the corpus is the source of truth.</p>
+    <p class="sub">Each stage writes plain files or SQLite you can open, diff and rebuild. The corpus is the source of truth; everything to its right is derived. A default install runs the solid parts; the dashed ones are optional tiers.</p>
     <div class="panel flow">
       <svg viewBox="0 0 1060 300" role="img" aria-label="Pipeline: sources, MCP server, corpus, extraction, signal store and knowledge graph, outputs">
         <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z"/></marker></defs>
         <!-- sources -->
         <text class="t" x="10" y="22">SOURCES</text>
-        <rect class="box" x="10" y="34" width="150" height="46" rx="3"/><text class="n" x="22" y="55">Email newsletters</text><text x="22" y="71" fill="var(--muted)" font-size="11.5">IMAP · Microsoft Graph</text>
+        <rect class="box opt" x="10" y="34" width="150" height="46" rx="3"/><text class="n" x="22" y="55">Email newsletters</text><text x="22" y="71" font-size="11.5">optional · IMAP, Graph</text>
         <rect class="box" x="10" y="92" width="150" height="46" rx="3"/><text class="n" x="22" y="113">RSS / Atom</text><text x="22" y="129" font-size="11.5">feedparser, page meta</text>
         <rect class="box" x="10" y="150" width="150" height="46" rx="3"/><text class="n" x="22" y="171">Web archives</text><text x="22" y="187" font-size="11.5">polite, cached backfill</text>
         <!-- mcp -->
@@ -201,8 +207,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
         <!-- analysis -->
         <text class="t" x="580" y="22">MODEL</text>
         <rect class="box" x="580" y="34" width="170" height="52" rx="3"/><text class="n" x="592" y="56">Signal store</text><text x="592" y="73" font-size="11.5">SQLite: velocity, novelty</text>
-        <rect class="box" x="580" y="98" width="170" height="52" rx="3"/><text class="n" x="592" y="120">Knowledge graph</text><text x="592" y="137" font-size="11.5">Graqle file · Neo4j copy</text>
-        <rect class="box" x="580" y="162" width="170" height="52" rx="3"/><text class="n" x="592" y="184">Vector index</text><text x="592" y="201" font-size="11.5">384-dim, hybrid search</text>
+        <rect class="box opt" x="580" y="98" width="170" height="52" rx="3"/><text class="n" x="592" y="120">Knowledge graph</text><text x="592" y="137" font-size="11.5">optional · Graqle, Neo4j</text>
+        <rect class="box opt" x="580" y="162" width="170" height="52" rx="3"/><text class="n" x="592" y="184">Vector index</text><text x="592" y="201" font-size="11.5">optional · hybrid search</text>
         <!-- outputs -->
         <text class="t" x="800" y="22">USE</text>
         <rect class="box" x="800" y="34" width="250" height="40" rx="3"/><text class="n" x="812" y="59">Console · Today, Explore, Ask</text>
@@ -210,15 +216,21 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
         <rect class="box" x="800" y="134" width="250" height="40" rx="3"/><text class="n" x="812" y="159">Claude via MCP tools and prompts</text>
         <rect class="box" x="800" y="184" width="250" height="40" rx="3"/><text class="n" x="812" y="209">Static public edition</text>
         <!-- router -->
-        <rect class="box key" x="390" y="246" width="360" height="40" rx="3"/><text class="n" x="402" y="271">LLM router</text><text x="490" y="271" font-size="11.5">roles: extraction · reasoning · writing · embedding</text>
+        <rect class="box key" x="390" y="246" width="360" height="40" rx="3"/><text class="n" x="402" y="271">LLM router</text><text x="490" y="271" font-size="11.5">local or cloud model per role, in one file</text>
         <!-- lines -->
         <path class="ln" d="M160 57 H198"/><path class="ln" d="M160 115 H198"/><path class="ln" d="M160 173 H198"/>
         <path class="ln" d="M350 69 H388"/>
         <path class="ln" d="M465 104 V124"/>
-        <path class="ln" d="M540 150 C560 150 560 60 578 60"/><path class="ln" d="M540 160 C560 160 560 124 578 124"/><path class="ln" d="M540 170 C560 170 560 188 578 188"/>
-        <path class="ln" d="M750 60 C775 60 775 54 798 54"/><path class="ln" d="M750 66 C775 66 775 104 798 104"/><path class="ln" d="M750 124 C775 124 775 154 798 154"/><path class="ln" d="M750 188 C775 188 775 204 798 204"/>
-        <path class="ln dash" d="M465 244 V198"/><path class="ln dash" d="M665 244 V216"/>
+        <path class="ln" d="M540 150 C560 150 560 60 578 60"/><path class="ln dash" d="M665 88 V96"/><path class="ln dash" d="M665 152 V160"/>
+        <path class="ln" d="M750 52 C775 52 775 54 798 54"/><path class="ln" d="M750 58 C775 58 775 100 798 100"/><path class="ln" d="M750 64 C775 64 775 150 798 150"/><path class="ln" d="M750 70 C775 70 775 200 798 200"/>
+        <path class="ln dash" d="M750 124 C775 124 775 110 798 110"/><path class="ln dash" d="M750 188 C775 188 775 160 798 160"/>
+        <path class="ln" d="M465 244 V198"/><path class="ln dash" d="M665 244 V216"/>
       </svg>
+      <div class="legend">
+        <span><i></i>Core: runs in every install</span>
+        <span><i class="o"></i>Optional: turn on with an install extra or a setting</span>
+        <span><i class="k"></i>Integration points</span>
+      </div>
     </div>
   </div>
 </section>
@@ -250,7 +262,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
         <div class="head"><h3>LLM router</h3><span class="path">signal_radar/llm.py</span></div>
         <p>Every model call goes through one router that reads <code>config/models.yaml</code>. No model name lives anywhere else.</p>
         <ul><li>Roles: extraction, reasoning, writing, embedding; override per run with <code>--model role=provider/model</code></li>
-          <li>Ollama, Anthropic, OpenAI, OpenRouter; ranked fallbacks ending in a local model</li>
+          <li>Local (Ollama, LM Studio, llama.cpp, vLLM) or cloud (Anthropic, OpenAI, OpenRouter), chosen per role; ranked fallbacks</li>
           <li><code>cheapest_passing</code>: the cheapest model that met a quality bar on your own evals</li>
           <li>Monthly budget cap; every call logged with tokens, cost and input hash</li></ul>
         <a class="adr" href="https://github.com/jpshetty-ai/signal-radar-community/blob/main/docs/adr/0013-model-selection.md">ADR-0013 →</a>
@@ -272,11 +284,11 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
         <a class="adr" href="https://github.com/jpshetty-ai/signal-radar-community/blob/main/docs/adr/0018-graph-signals.md">ADR-0018 →</a>
       </div>
       <div class="panel comp">
-        <div class="head"><h3>Knowledge graph and vector search</h3><span class="path">graph_export.py · vectors.py</span></div>
-        <p>Documents and entities go into a Graqle graph file, optionally mirrored into Neo4j for queries, story clusters and lens links.</p>
+        <div class="head"><h3>Knowledge graph and vector search <span class="tag" style="margin:0 0 0 6px;vertical-align:middle">Optional</span></h3><span class="path">graph_export.py · vectors.py</span></div>
+        <p>An optional tier. Documents and entities go into a Graqle graph file, optionally mirrored into Neo4j for queries, story clusters and lens links. Without it, Explore and clusters come from the signal store.</p>
         <ul><li>Neo4j sync with a restricted user and a delete-fraction guard</li>
           <li>In-process ONNX embeddings, cached by text hash, bounded per run</li>
-          <li>Ask is hybrid: keyword plus vector, merged by reciprocal rank fusion</li></ul>
+          <li>With vectors on, Ask is hybrid: keyword plus vector, merged by reciprocal rank fusion</li></ul>
         <a class="adr" href="https://github.com/jpshetty-ai/signal-radar-community/blob/main/docs/adr/0019-vector-search.md">ADR-0019 →</a>
       </div>
       <div class="panel comp">
@@ -323,7 +335,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: 
     <div class="panel princ">
       <div><h3>Evidence or it did not happen</h3><p>Every signal links to the items behind it. Generated text cites ids; invented ids are stripped. Thin evidence is labelled thin.</p></div>
       <div><h3>Code computes, models narrate</h3><p>Counts, velocity and clusters come from SQL. Models classify and write, never decide what is rising.</p></div>
-      <div><h3>Local first</h3><p>Runs on a laptop with Ollama and in-process embeddings. Cloud models are optional, capped and logged.</p></div>
+      <div><h3>Local first</h3><p>Runs on a laptop with a local model by default. Cloud models are your choice per job, capped and logged.</p></div>
       <div><h3>Models are swappable</h3><p>Roles, not model names. Change provider in one YAML file and re-run the evals.</p></div>
       <div><h3>Respect publishers</h3><p>Store summaries and links, never full articles. Sources whose terms forbid sharing stay out of any public edition.</p></div>
       <div><h3>Write the decision down</h3><p>18 ADRs record context, options, the choice and its consequences, including the gaps.</p></div>
@@ -350,7 +362,8 @@ python scripts/demo.py --serve</pre>
       <p class="eyebrow">Your own radar</p>
       <h2>Point it at your sources</h2>
       <p class="sub" style="margin-bottom:16px">Public EU tech and policy feeds are on by default. Add newsletters and your own lens when you are ready.</p>
-<pre><span class="c"># local model for extraction</span>
+<pre><span class="c"># a model: local by default, or set a cloud</span>
+<span class="c"># model per role in config/models.yaml</span>
 ollama pull qwen3:8b
 
 <span class="c"># fetch, extract, score, build the console</span>

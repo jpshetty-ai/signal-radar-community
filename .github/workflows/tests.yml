@@ -4,7 +4,8 @@ on:
     branches: [main]
   pull_request:
 jobs:
-  test:
+  core:
+    # what a default install runs, on both supported Pythons, plus the full demo pipeline
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,3 +19,13 @@ jobs:
       - run: pytest -q
       - name: demo pipeline (synthetic corpus -> signals -> brief -> sites)
         run: python scripts/demo.py
+  optional-tiers:
+    # knowledge graph, Neo4j sync and vector code paths (no Neo4j server needed: the tests use fakes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e '.[anthropic,openai,mcp,web,graph,vectors,dev]'
+      - run: pytest -q -rs

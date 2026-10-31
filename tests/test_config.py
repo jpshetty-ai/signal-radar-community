@@ -31,7 +31,8 @@ def test_override_rejects_bad_input(bad):
 
 
 def test_override_keeps_params_only_for_same_provider():
-    cfg = load_models(overrides=["extraction=ollama/llama3.1:8b", "reasoning=openai/gpt-x"])
+    fixture = CONFIG_DIR.parent / "tests" / "fixtures" / "models_v1.yaml"  # concrete roles with params
+    cfg = load_models(fixture, overrides=["extraction=ollama/llama3.1:8b", "reasoning=openai/gpt-x"])
     assert cfg.roles["extraction"].model == "llama3.1:8b"
     assert cfg.roles["extraction"].params.get("temperature") == 0
     assert cfg.roles["reasoning"].params == {}

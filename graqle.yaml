@@ -3,20 +3,19 @@
 project_name: signal-radar
 domain: custom
 model:
-  backend: openai
-  model: openai/gpt-6-luna
-  api_key: ${OPENROUTER_API_KEY}
-  endpoint: https://openrouter.ai/api/v1
+  backend: ollama
+  model: qwen3:8b
+  host: http://localhost:11434
 models:
   extraction:
     backend: ollama
     model: qwen3:8b
   reasoning:
-    backend: openai
-    model: openai/gpt-6-luna
+    backend: ollama
+    model: qwen3:8b
   writing:
-    backend: openai
-    model: openai/gpt-6-luna
+    backend: ollama
+    model: qwen3:8b
 graph:
   connector: networkx
   path: data/graqle/graqle.json

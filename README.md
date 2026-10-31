@@ -28,33 +28,49 @@ a local model; cloud models are optional, capped and logged.
 
 ## Architecture
 
+Solid boxes run in every install. Dashed boxes are optional tiers you turn on when you want them.
+
 ```mermaid
 flowchart LR
+  classDef opt stroke-dasharray: 5 5
   subgraph S[Sources]
-    E[Email newsletters<br/>IMAP, Microsoft Graph]
     R[RSS / Atom]
     A[Web archives<br/>backfill]
+    E[Email newsletters<br/>IMAP, Microsoft Graph]:::opt
   end
   M[signal-sources<br/>MCP server]
   C[(Corpus<br/>Markdown + YAML)]
   X[Extraction<br/>entities, relations,<br/>relevance]
   SS[(Signal store<br/>SQLite)]
-  G[(Knowledge graph<br/>Graqle / Neo4j)]
-  V[(Vector index)]
-  L{{LLM router<br/>models.yaml}}
+  L{{LLM router<br/>local or cloud models}}
+  G[(Knowledge graph<br/>Graqle, Neo4j)]:::opt
+  V[(Vector index)]:::opt
   O1[Console]
   O2[Weekly brief]
   O3[Claude via MCP]
   O4[Static public edition]
-  E & R & A --> M --> C --> X --> SS & G & V
-  L -.-> X
-  L -.-> O1 & O2
-  SS & G & V --> O1 & O2 & O3 & O4
+  R & A & E --> M --> C --> X --> SS
+  L --> X & O1 & O2
+  SS --> O1 & O2 & O3 & O4
+  SS & C -.-> G -.-> V
+  G -.-> O2
+  V -.-> O1 & O3
 ```
 
 The corpus is the source of truth; the signal store, graph and vectors are derived and can be rebuilt at any time.
 Code computes the signals (counts, velocity, clusters); models only classify items and write prose, and any cited
 item id a model invents is removed before you see it.
+
+| Tier | What it adds | Turn it on |
+|---|---|---|
+| **Core** | Sources, MCP server, corpus, extraction, signal store, console, weekly brief, public edition, Claude via MCP | Default install plus one model, local or cloud |
+| Knowledge graph | Graph of documents, entities and relations | `pip install -e '.[graph]'` |
+| Neo4j | Served graph; story clusters and lens links in the brief | Graph tier plus `connector: neo4j` in `config/graph.yaml` |
+| Vector search | Hybrid Ask, `semantic_search`, `signal-radar search` | Graph tier plus `pip install -e '.[vectors]'` |
+| Email, scheduling, publishing | Newsletters from your mailbox, daily runs, a hosted public edition | See below and [docs/architecture.md](docs/architecture.md) |
+
+Without the optional tiers nothing breaks: Explore draws its graph from the signal store, the brief clusters
+co-mentioned entity pairs, and Ask uses keyword search.
 
 ## Components
 
@@ -63,11 +79,11 @@ item id a model invents is removed before you see it.
 | MCP server | [`mcp_server.py`](src/signal_radar/mcp_server.py) | Official `mcp` SDK 2.x, stdio. 13 typed tools (`top_movers`, `trend_metrics`, `emerging_clusters`, `reading_list`, `semantic_search`, `run_ingest`, `subscribe_source`, ...), resources `corpus://items/{id}` and `corpus://digest/{date}`, prompts `weekly_signal_brief`, `learning_radar`, `content_ideas` | [ADR-0005](docs/adr/0005-mcp-sdk-v2.md) |
 | Source adapters | [`sources/`](src/signal_radar/sources/) | One interface, `fetch(since) -> list[Item]`. Gmail over IMAP (read-only), Microsoft 365 over Graph, RSS/Atom, web-archive backfill, per-newsletter parsers. Subscribe by config, no code change | [ADR-0004](docs/adr/0004-source-subscriptions.md), [0007](docs/adr/0007-m365-mail-via-graph.md), [0008](docs/adr/0008-gmail-imap-and-alphasignal.md), [0012](docs/adr/0012-rss-adapter-european-sources.md) |
 | Corpus | [`corpus.py`](src/signal_radar/corpus.py) | One Markdown file per item with YAML frontmatter. Summaries and links only, never full articles. Idempotent (url + title hash) | [ADR-0009](docs/adr/0009-corpus-ingest-backfill.md) |
-| LLM router | [`llm.py`](src/signal_radar/llm.py) | Roles (`extraction`, `reasoning`, `writing`, `embedding`) mapped to models in [`config/models.yaml`](config/models.yaml). Ollama, Anthropic, OpenAI, OpenRouter. Ranked fallbacks ending in a local model, `cheapest_passing` selection, monthly budget cap, per-call log of tokens and cost | [ADR-0002](docs/adr/0002-llm-router.md), [0006](docs/adr/0006-call-log-sqlite.md), [0013](docs/adr/0013-model-selection.md) |
+| LLM router | [`llm.py`](src/signal_radar/llm.py) | Roles (`extraction`, `reasoning`, `writing`, `embedding`) mapped to models in [`config/models.yaml`](config/models.yaml). Local (Ollama, LM Studio, llama.cpp, vLLM, Jan) or cloud (Anthropic, OpenAI, OpenRouter). Ranked fallbacks, `cheapest_passing` selection, monthly budget cap, per-call log of tokens and cost | [ADR-0002](docs/adr/0002-llm-router.md), [0006](docs/adr/0006-call-log-sqlite.md), [0013](docs/adr/0013-model-selection.md) |
 | Extraction | [`extract.py`](src/signal_radar/extract.py) | Schema-checked JSON from a local model: category, relevance to your lens, entities (8 types), relations (7 types). Resumable, cached by input hash. Aliases fold spellings into one entity | [ADR-0010](docs/adr/0010-extraction-signal-store.md) |
 | Signal store | [`signals.py`](src/signal_radar/signals.py) | SQLite: weekly mentions, velocity, novelty, co-occurrence growth, confidence from source families, watchlist blind spots | [ADR-0010](docs/adr/0010-extraction-signal-store.md), [0018](docs/adr/0018-graph-signals.md) |
-| Knowledge graph | [`graph_export.py`](src/signal_radar/graph_export.py), [`graph_sync.py`](src/signal_radar/graph_sync.py), [`graph_signals.py`](src/signal_radar/graph_signals.py) | Graqle graph file, optionally mirrored into Neo4j (restricted user, delete guard) for story clusters and lens links | [ADR-0003](docs/adr/0003-graqle-config-generated.md), [0017](docs/adr/0017-neo4j-graph-store.md) |
-| Vector search | [`vectors.py`](src/signal_radar/vectors.py) | In-process ONNX embeddings (384-dim), cached by text hash, bounded per run. Ask is hybrid: keyword plus vector, reciprocal rank fusion | [ADR-0019](docs/adr/0019-vector-search.md) |
+| Knowledge graph (optional) | [`graph_export.py`](src/signal_radar/graph_export.py), [`graph_sync.py`](src/signal_radar/graph_sync.py), [`graph_signals.py`](src/signal_radar/graph_signals.py) | Graqle graph file, optionally mirrored into Neo4j (restricted user, delete guard) for story clusters and lens links | [ADR-0003](docs/adr/0003-graqle-config-generated.md), [0017](docs/adr/0017-neo4j-graph-store.md) |
+| Vector search (optional) | [`vectors.py`](src/signal_radar/vectors.py) | In-process ONNX embeddings (384-dim), cached by text hash, bounded per run. When on, Ask is hybrid: keyword plus vector, reciprocal rank fusion | [ADR-0019](docs/adr/0019-vector-search.md) |
 | Console and site | [`site/`](src/signal_radar/site/) | Static-first: JSON data plus templates. Today, Brief, Explore (radial ego graph), Method (every number explained). Local console adds Ask and feedback | [ADR-0011](docs/adr/0011-static-first-site.md) |
 | Weekly brief | [`brief.py`](src/signal_radar/brief.py) | Top movers, emerging entities, fading topics, forming clusters, each with evidence, confidence and a "so what for me" line | |
 | Model evaluation | [`evals.py`](src/signal_radar/evals.py), [`judges.py`](src/signal_radar/judges.py) | Candidates measured on this project's own tasks: LLM-as-judge and blind human grading sheets | [ADR-0013](docs/adr/0013-model-selection.md) |
@@ -96,12 +112,13 @@ canned answers in place of a model), signal store, weekly brief, console and pub
 ### 2. Run your own radar
 
 ```bash
-pip install -e '.[anthropic,openai,mcp,web,vectors,dev]'   # provider SDKs are optional; install what you use
-cp .env.example .env                                       # fill in only what config/models.yaml uses
-ollama pull qwen3:8b                                       # the default local extraction model
-signal-radar config                                        # validate config, show resolved roles
-signal-radar daily                                         # ingest + extract + signals + graph + site
-signal-radar web                                           # console on http://127.0.0.1:8765
+pip install -e '.[mcp,web,dev]'        # add anthropic / openai if you use those providers (OpenRouter uses openai)
+cp .env.example .env                   # keys only for the cloud models you pick
+ollama pull qwen3:8b                   # the default local model; skip if you choose another (next section)
+signal-radar config                    # validate config, show which model each role uses
+signal-radar llm extraction "ping"     # smoke test the extraction model
+signal-radar daily                     # ingest + extract + signals + brief + site
+signal-radar web                       # console on http://127.0.0.1:8765
 pytest
 ```
 
@@ -112,10 +129,46 @@ Commission digital strategy). Then make it yours:
   `signal-radar extract --redo`. The shipped lens is the author's (financial services, risk, EU AI Act).
 - **Your sources:** add feeds in [`config/sources.yaml`](config/sources.yaml), or ask Claude to call
   `subscribe_source` through the MCP server.
-- **Your models:** edit [`config/models.yaml`](config/models.yaml); override per run with
-  `signal-radar --model writing=anthropic/<model> brief`. Then `python scripts/sync_graqle_config.py`.
-- **Knowledge graph (optional):** `pip install -e '.[graph]'`; set `connector: neo4j` in
-  [`config/graph.yaml`](config/graph.yaml) to serve it from Neo4j.
+- **Optional tiers:** knowledge graph, Neo4j and vector search, as in the tier table above.
+
+### Choose your models
+
+Every model call goes through one router, and [`config/models.yaml`](config/models.yaml) decides which model does
+each job. The default is fully local (Ollama, nothing leaves your machine). To use something else, put another
+catalog id in a role:
+
+```yaml
+roles:
+  extraction:
+    candidates: [anthropic-haiku]     # was [local]
+  reasoning:
+    candidates: [anthropic-sonnet]
+  writing:
+    candidates: [anthropic-sonnet, local]   # tried in order: falls back to local if the first fails
+```
+
+| Catalog id | Runs on | Needs |
+|---|---|---|
+| `local` | Ollama, qwen3:8b (default) | `ollama pull qwen3:8b` |
+| `local-server` | LM Studio, llama.cpp, vLLM, Jan: any OpenAI-compatible server on your machine | The server running; set its port and model name in `models.yaml`. No key |
+| `anthropic-haiku`, `anthropic-sonnet` | Anthropic API (Claude Haiku 5.5, Claude Sonnet 5.5) | `ANTHROPIC_API_KEY`, `pip install -e '.[anthropic]'` |
+| `openai-luna` | OpenAI API | `OPENAI_API_KEY`, `pip install -e '.[openai]'` |
+| `openrouter-luna`, `openrouter-sonnet` | OpenRouter: hundreds of models with one key, no-retention endpoints only | `OPENROUTER_API_KEY`, `pip install -e '.[openai]'` |
+
+Add your own entries to the catalog: any Ollama model, any OpenRouter id, any model your local server loads.
+Extraction is the high-volume job: about 1,100 input and 200 output tokens per item, so roughly $0.0003 per item
+with Claude Haiku 5.5, or 3 cents for a 100-item day. Paid calls stop at the monthly `budget` in the same file.
+
+Try a model for one run without editing anything, then compare runs on identical inputs:
+
+```bash
+signal-radar --model extraction=@anthropic-haiku extract --limit 5
+signal-radar --model writing=anthropic/claude-sonnet-5-5 brief     # any model by name
+signal-radar compare                                               # same inputs, different models: tokens, cost
+signal-radar models eval --judge anthropic-sonnet                  # score candidates on your own tasks (asks first)
+```
+
+If you use the knowledge graph, run `python scripts/sync_graqle_config.py` after changing models.
 
 ### 3. Use it from Claude
 

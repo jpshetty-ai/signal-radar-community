@@ -20,8 +20,12 @@ def test_reasoning_role_drives_graqle_model():
     assert any("embedding role" in w for w in warnings)
 
 
-def test_candidate_roles_map_to_first_choice_by_provider_kind():
-    doc, _ = sync.build()  # live config: reasoning candidates served via OpenRouter (an OpenAI-compatible kind)
+def test_candidate_roles_map_to_first_choice_by_provider_kind(tmp_path):
+    live = yaml.safe_load((ROOT / "config" / "models.yaml").read_text())
+    live["roles"]["reasoning"] = {"candidates": ["openrouter-luna", "local"]}  # served via an OpenAI-compatible kind
+    path = tmp_path / "models.yaml"
+    path.write_text(yaml.safe_dump(live))
+    doc, _ = sync.build(path)
     assert doc["model"]["backend"] == "openai" and doc["model"]["endpoint"] == "https://openrouter.ai/api/v1"
     assert doc["model"]["api_key"] == "${OPENROUTER_API_KEY}"
 

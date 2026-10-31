@@ -21,6 +21,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -218,6 +219,8 @@ class OpenAIClient:
         except ImportError as e:
             raise LLMError("provider 'openai' needs: pip install 'signal-radar[openai]'") from e
         key = os.environ.get(settings.api_key_env or "OPENAI_API_KEY") or _keychain(settings.api_key_env)
+        if not key and _is_localhost(settings.base_url):
+            key = "local"  # LM Studio, llama.cpp, vLLM and Jan ignore the key, but the SDK requires one
         if not key:
             raise LLMError(f"no API key: set {settings.api_key_env or 'OPENAI_API_KEY'} in .env or the macOS keychain "
                            f"(security add-generic-password -s signal-radar -a {settings.api_key_env} -w)")
@@ -235,7 +238,12 @@ class OpenAIClient:
                 "type": "json_schema",
                 "json_schema": {"name": "output", "schema": json_schema, "strict": True},
             }
-        resp = self.client.chat.completions.create(**kwargs)
+        import openai
+
+        try:
+            resp = self.client.chat.completions.create(**kwargs)
+        except openai.APIConnectionError as e:
+            raise LLMError(f"{spec.provider} not reachable at {self.client.base_url}; is the server running?") from e
         choice = resp.choices[0]
         u = resp.usage
         return RawCompletion(
@@ -290,6 +298,10 @@ class FastEmbedClient:
 
 PROVIDERS: dict[str, type] = {"ollama": OllamaClient, "anthropic": AnthropicClient, "openai": OpenAIClient,
                               "fastembed": FastEmbedClient}
+
+
+def _is_localhost(url: str | None) -> bool:
+    return bool(url) and urlsplit(url).hostname in {"localhost", "127.0.0.1", "::1"}
 
 
 def _keychain(account: str | None) -> str | None:
